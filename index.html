@@ -63,7 +63,6 @@
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
 
-        // Карта мира (1 - стена с кирпичами, 0 - пустота)
         const map = [
             [1,1,1,1,1,1,1,1,1,1],
             [1,0,0,0,1,0,0,0,0,1],
@@ -75,8 +74,8 @@
         ];
 
         let player = {
-            x: 2.0,
-            y: 2.0,
+            x: 2.5,
+            y: 1.5,
             angle: 0,
             health: 83,
             armor: 26,
@@ -84,13 +83,11 @@
         };
 
         function draw() {
-            // Небо и земля
             ctx.fillStyle = "#111";
             ctx.fillRect(0, 0, 320, 120);
             ctx.fillStyle = "#2b2b2b";
             ctx.fillRect(0, 120, 320, 120);
 
-            // Рейкастинг стен с текстурой
             let numRays = 320;
             let fov = Math.PI / 3;
 
@@ -113,7 +110,6 @@
                         distance = 16;
                     } else if (map[testY][testX] === 1) {
                         hitWall = true;
-                        // Вычисляем координату удара для текстуры кирпича
                         let blockX = player.x + eyeX * distance;
                         let blockY = player.y + eyeY * distance;
                         sampleX = blockX - Math.floor(blockX);
@@ -124,7 +120,6 @@
                 let correctedDistance = distance * Math.cos(rayAngle - player.angle);
                 let wallHeight = Math.min(240, 220 / correctedDistance);
 
-                // Цвет стен с имитацией кирпичной текстуры и тени
                 let shade = Math.max(20, 180 - distance * 12);
                 let isBrick = Math.floor(sampleX * 8) % 2 === 0;
                 let r = isBrick ? shade : shade * 0.7;
@@ -135,33 +130,28 @@
                 ctx.fillRect(i, 120 - wallHeight / 2, 1, wallHeight);
             }
 
-            // Рендер оружия (АК-47 внизу экрана)
             drawWeapon();
-
-            // Рендер HUD (Интерфейс здоровья, брони и патронов)
             drawHUD();
         }
 
         function drawWeapon() {
-            // Приклад/ствольная коробка
-            ctx.fillStyle = "#3a3a3a";
-            ctx.fillRect(120, 150, 80, 50);
-            ctx.fillStyle = "#555";
-            ctx.fillRect(140, 130, 40, 30);
-            // Ствол
-            ctx.fillStyle = "#111";
-            ctx.fillRect(150, 80, 12, 60);
-            // Магазин (рогатый автоматный)
+            // Оружие смотрит прямо в центр экрана
             ctx.fillStyle = "#222";
+            ctx.fillRect(135, 170, 50, 60); 
+            ctx.fillStyle = "#444";
+            ctx.fillRect(140, 140, 40, 40); 
+            ctx.fillStyle = "#111";
+            ctx.fillRect(152, 90, 16, 60);  
+            ctx.fillStyle = "#ffcc00";
+            ctx.fillRect(158, 85, 4, 8);    
+            
+            ctx.fillStyle = "#2a2a2a";
             ctx.beginPath();
             ctx.moveTo(150, 180);
-            ctx.lineTo(130, 220);
-            ctx.lineTo(145, 225);
-            ctx.lineTo(160, 180);
+            ctx.lineTo(135, 220);
+            ctx.lineTo(150, 225);
+            ctx.lineTo(165, 180);
             ctx.fill();
-            // Дульный срез / мушка
-            ctx.fillStyle = "#ffcc00";
-            ctx.fillRect(154, 75, 4, 10);
         }
 
         function drawHUD() {
@@ -169,13 +159,10 @@
             ctx.fillRect(0, 205, 320, 35);
 
             ctx.font = "bold 14px monospace";
-            // Здоровье
             ctx.fillStyle = "#ff3333";
             ctx.fillText(`✚ ${player.health}`, 15, 227);
-            // Броня
             ctx.fillStyle = "#3388ff";
             ctx.fillText(`🛡 ${player.armor}`, 95, 227);
-            // Патроны
             ctx.fillStyle = "#ffcc00";
             ctx.fillText(`BUL: ${player.ammo}`, 235, 227);
         }
@@ -231,7 +218,6 @@
             draw();
         }
 
-        // Первичная отрисовка при запуске
         draw();
     </script>
 </body>
