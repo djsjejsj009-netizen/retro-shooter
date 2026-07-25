@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retro Shooter 3D</title>
+    <style>
+        body {
+            margin: 0;
+            background: #111;
+            color: #fff;
+            font-family: monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        canvas {
+            border: 2px solid #444;
+            background: #000;
+            max-width: 100%;
+            height: auto;
+        }
+        .controls {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background: #333;
+            color: #fff;
+            border: 1px solid #666;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Retro Shooter Alpha</h2>
+    <canvas id="gameCanvas" width="320" height="240"></canvas>
+    
+    <div class="controls">
+        <button onclick="turnLeft()">⟵ ЛЕВО</button>
+        <button onclick="moveForward()">ВХОД ⬆</button>
+        <button onclick="turnRight()">ПРАВО ⟶</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // Карта мира (1 - стена, 0 - пустота)
+        const map = [
+            [1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,1],
+            [1,0,1,1,0,1,0,1],
+            [1,0,1,0,0,1,0,1],
+            [1,0,0,0,1,0,0,1],
+            [1,1,1,1,1,1,1,1]
+        ];
+
+        let player = {
+            x: 2.5,
+            y: 2.5,
+            angle: 0
+        };
+
+        function draw() {
+            // Очистка экрана (небо и земля)
+            ctx.fillStyle = "#222";
+            ctx.fillRect(0, 0, 320, 120);
+            ctx.fillStyle = "#444";
+            ctx.fillRect(0, 120, 320, 120);
+
+            // Простой рейкастер
+            let numRays = 320;
+            let fov = Math.PI / 3;
+
+            for (let i = 0; i < numRays; i++) {
+                let rayAngle = player.angle - fov / 2 + (i / numRays) * fov;
+                let distance = 0;
+                let hitWall = false;
+
+                let eyeX = Math.cos(rayAngle);
+                let eyeY = Math.sin(rayAngle);
+
+                while (!hitWall && distance < 16) {
+                    distance += 0.05;
+                    let testX = Math.floor(player.x + eyeX * distance);
+                    let testY = Math.floor(player.y + eyeY * distance);
+
+                    if (testX < 0 || testX >= 8 || testY < 0 || testY >= 6) {
+                        hitWall = true;
+                        distance = 16;
+                    } else if (map[testY][testX] === 1) {
+                        hitWall = true;
+                    }
+                }
+
+                // Коррекция рыбьего глаза
+                let correctedDistance = distance * Math.cos(rayAngle - player.angle);
+                let wallHeight = Math.min(240, 240 / correctedDistance);
+
+                ctx.fillStyle = `rgb(${Math.max(20, 200 - distance * 15)}, 50, 50)`;
+                ctx.fillRect(i, 120 - wallHeight / 2, 1, wallHeight);
+            }
+        }
+
+        function moveForward() {
+            let nextX = player.x + Math.cos(player.angle) * 0.2;
+            let nextY = player.y + Math.sin(player.angle) * 0.2;
+            if (map[Math.floor(nextY)][Math.floor(nextX)] === 0) {
+                player.x = nextX;
+                player.y = nextY;
+            }
+            draw();
+        }
+
+        function turnLeft() {
+            player.angle -= 0.2;
+            draw();
+        }
+
+        function turnRight() {
+            player.angle += 0.2;
+            draw();
+        }
+
+        draw();
+    </script>
+</body>
+</html>
+
