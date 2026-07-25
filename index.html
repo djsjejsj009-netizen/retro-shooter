@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -7,7 +8,7 @@
     <style>
         body {
             margin: 0;
-            background: #111;
+            background: #0a0a0a;
             color: #fff;
             font-family: monospace;
             display: flex;
@@ -18,66 +19,78 @@
             overflow: hidden;
         }
         canvas {
-            border: 2px solid #444;
+            border: 2px solid #333;
             background: #000;
             max-width: 100%;
             height: auto;
+            box-shadow: 0 0 20px rgba(255,0,0,0.2);
         }
         .controls {
-            margin-top: 10px;
-            display: flex;
-            gap: 10px;
+            margin-top: 8px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            width: 320px;
         }
         button {
-            padding: 10px 20px;
-            font-size: 16px;
-            background: #333;
-            color: #fff;
-            border: 1px solid #666;
-            border-radius: 5px;
+            padding: 10px;
+            font-size: 14px;
+            background: #222;
+            color: #ff5555;
+            border: 1px solid #555;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        button:active {
+            background: #444;
         }
     </style>
 </head>
 <body>
 
-    <h2>Retro Shooter Alpha</h2>
     <canvas id="gameCanvas" width="320" height="240"></canvas>
     
     <div class="controls">
         <button onclick="turnLeft()">⟵ ЛЕВО</button>
         <button onclick="moveForward()">ВХОД ⬆</button>
         <button onclick="turnRight()">ПРАВО ⟶</button>
+        <button onclick="strafeLeft()">◀ СТРЕЙФ</button>
+        <button onclick="moveBackward()">НАЗАД ⬇</button>
+        <button onclick="strafeRight()">СТРЕЙФ ▶</button>
     </div>
 
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
 
-        // Карта мира (1 - стена, 0 - пустота)
+        // Карта мира (1 - стена с кирпичами, 0 - пустота)
         const map = [
-            [1,1,1,1,1,1,1,1],
-            [1,0,0,0,0,0,0,1],
-            [1,0,1,1,0,1,0,1],
-            [1,0,1,0,0,1,0,1],
-            [1,0,0,0,1,0,0,1],
-            [1,1,1,1,1,1,1,1]
+            [1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,1,0,0,0,0,1],
+            [1,0,1,0,1,0,1,1,0,1],
+            [1,0,1,0,0,0,0,1,0,1],
+            [1,0,1,1,1,1,0,1,0,1],
+            [1,0,0,0,0,1,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1]
         ];
 
-                let player = {
-            x: 1.5,
-            y: 1.5,
-            angle: 0
+        let player = {
+            x: 2.0,
+            y: 2.0,
+            angle: 0,
+            health: 83,
+            armor: 26,
+            ammo: 99
         };
 
-
         function draw() {
-            // Очистка экрана (небо и земля)
-            ctx.fillStyle = "#222";
+            // Небо и земля
+            ctx.fillStyle = "#111";
             ctx.fillRect(0, 0, 320, 120);
-            ctx.fillStyle = "#444";
+            ctx.fillStyle = "#2b2b2b";
             ctx.fillRect(0, 120, 320, 120);
 
-            // Простой рейкастер
+            // Рейкастинг стен с текстурой
             let numRays = 320;
             let fov = Math.PI / 3;
 
@@ -85,39 +98,126 @@
                 let rayAngle = player.angle - fov / 2 + (i / numRays) * fov;
                 let distance = 0;
                 let hitWall = false;
+                let sampleX = 0;
 
                 let eyeX = Math.cos(rayAngle);
                 let eyeY = Math.sin(rayAngle);
 
                 while (!hitWall && distance < 16) {
-                    distance += 0.05;
+                    distance += 0.04;
                     let testX = Math.floor(player.x + eyeX * distance);
                     let testY = Math.floor(player.y + eyeY * distance);
 
-                    if (testX < 0 || testX >= 8 || testY < 0 || testY >= 6) {
+                    if (testX < 0 || testX >= 10 || testY < 0 || testY >= 7) {
                         hitWall = true;
                         distance = 16;
                     } else if (map[testY][testX] === 1) {
                         hitWall = true;
+                        // Вычисляем координату удара для текстуры кирпича
+                        let blockX = player.x + eyeX * distance;
+                        let blockY = player.y + eyeY * distance;
+                        sampleX = blockX - Math.floor(blockX);
+                        if (sampleX < 0.05 || sampleX > 0.95) sampleX = blockY - Math.floor(blockY);
                     }
                 }
 
-                // Коррекция рыбьего глаза
                 let correctedDistance = distance * Math.cos(rayAngle - player.angle);
-                let wallHeight = Math.min(240, 240 / correctedDistance);
+                let wallHeight = Math.min(240, 220 / correctedDistance);
 
-                ctx.fillStyle = `rgb(${Math.max(20, 200 - distance * 15)}, 50, 50)`;
+                // Цвет стен с имитацией кирпичной текстуры и тени
+                let shade = Math.max(20, 180 - distance * 12);
+                let isBrick = Math.floor(sampleX * 8) % 2 === 0;
+                let r = isBrick ? shade : shade * 0.7;
+                let g = isBrick ? 30 : 20;
+                let b = isBrick ? 30 : 20;
+
+                ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
                 ctx.fillRect(i, 120 - wallHeight / 2, 1, wallHeight);
             }
+
+            // Рендер оружия (АК-47 внизу экрана)
+            drawWeapon();
+
+            // Рендер HUD (Интерфейс здоровья, брони и патронов)
+            drawHUD();
+        }
+
+        function drawWeapon() {
+            // Приклад/ствольная коробка
+            ctx.fillStyle = "#3a3a3a";
+            ctx.fillRect(120, 150, 80, 50);
+            ctx.fillStyle = "#555";
+            ctx.fillRect(140, 130, 40, 30);
+            // Ствол
+            ctx.fillStyle = "#111";
+            ctx.fillRect(150, 80, 12, 60);
+            // Магазин (рогатый автоматный)
+            ctx.fillStyle = "#222";
+            ctx.beginPath();
+            ctx.moveTo(150, 180);
+            ctx.lineTo(130, 220);
+            ctx.lineTo(145, 225);
+            ctx.lineTo(160, 180);
+            ctx.fill();
+            // Дульный срез / мушка
+            ctx.fillStyle = "#ffcc00";
+            ctx.fillRect(154, 75, 4, 10);
+        }
+
+        function drawHUD() {
+            ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+            ctx.fillRect(0, 205, 320, 35);
+
+            ctx.font = "bold 14px monospace";
+            // Здоровье
+            ctx.fillStyle = "#ff3333";
+            ctx.fillText(`✚ ${player.health}`, 15, 227);
+            // Броня
+            ctx.fillStyle = "#3388ff";
+            ctx.fillText(`🛡 ${player.armor}`, 95, 227);
+            // Патроны
+            ctx.fillStyle = "#ffcc00";
+            ctx.fillText(`BUL: ${player.ammo}`, 235, 227);
+        }
+
+        function isValid(x, y) {
+            let tx = Math.floor(x);
+            let ty = Math.floor(y);
+            if (tx < 0 || tx >= 10 || ty < 0 || ty >= 7) return false;
+            return map[ty][tx] === 0;
         }
 
         function moveForward() {
-            let nextX = player.x + Math.cos(player.angle) * 0.2;
-            let nextY = player.y + Math.sin(player.angle) * 0.2;
-            if (map[Math.floor(nextY)][Math.floor(nextX)] === 0) {
-                player.x = nextX;
-                player.y = nextY;
-            }
+            let nx = player.x + Math.cos(player.angle) * 0.2;
+            let ny = player.y + Math.sin(player.angle) * 0.2;
+            if (isValid(nx, player.y)) player.x = nx;
+            if (isValid(player.x, ny)) player.y = ny;
+            draw();
+        }
+
+        function moveBackward() {
+            let nx = player.x - Math.cos(player.angle) * 0.2;
+            let ny = player.y - Math.sin(player.angle) * 0.2;
+            if (isValid(nx, player.y)) player.x = nx;
+            if (isValid(player.x, ny)) player.y = ny;
+            draw();
+        }
+
+        function strafeLeft() {
+            let strafeAngle = player.angle - Math.PI / 2;
+            let nx = player.x + Math.cos(strafeAngle) * 0.2;
+            let ny = player.y + Math.sin(strafeAngle) * 0.2;
+            if (isValid(nx, player.y)) player.x = nx;
+            if (isValid(player.x, ny)) player.y = ny;
+            draw();
+        }
+
+        function strafeRight() {
+            let strafeAngle = player.angle + Math.PI / 2;
+            let nx = player.x + Math.cos(strafeAngle) * 0.2;
+            let ny = player.y + Math.sin(strafeAngle) * 0.2;
+            if (isValid(nx, player.y)) player.x = nx;
+            if (isValid(player.x, ny)) player.y = ny;
             draw();
         }
 
@@ -131,8 +231,8 @@
             draw();
         }
 
+        // Первичная отрисовка при запуске
         draw();
     </script>
 </body>
 </html>
-
